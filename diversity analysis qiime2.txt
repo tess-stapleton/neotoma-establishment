@@ -1,0 +1,961 @@
+#Hypothesis testing for alpha and beta-diversity
+#run on QIIME2 Version 2019.4
+
+#creosote experiment
+#pre-transplant, day-0 comparison of treatment groups
+#subset table for just day-0
+
+ qiime feature-table filter-samples \
+  --i-table final-table.qza \
+  --m-metadata-file novel-resource-metadata.txt \
+  --p-where "Sampletype IN ('day0')" \
+  --o-filtered-table day-0-table.qza
+  
+mkdir day-0
+
+#generate alpha-diversity metrics  
+qiime diversity alpha \
+  --i-table day-0-table.qza \
+  --p-metric shannon \
+  --o-alpha-diversity shannon_vector.qza 
+  
+  qiime diversity alpha \
+  --i-table day-0-table.qza \
+  --p-metric  observed_otus \
+  --o-alpha-diversity observed_otus_vector.qza 
+  
+  qiime diversity alpha-phylogenetic \
+  --i-table day-0-table.qza \
+  --i-phylogeny rooted-tree.qza \
+  --p-metric faith_pd \
+  --o-alpha-diversity faith_pd_vector.qza
+  
+  #generate beta-diversity distance matrices
+  qiime diversity beta-phylogenetic \
+  --i-table day-0-table.qza \
+  --i-phylogeny rooted-tree.qza \
+  --p-metric weighted_unifrac \
+  --o-distance-matrix weighted_unifrac_distance_matrix.qza 
+  
+    qiime diversity beta-phylogenetic \
+  --i-table day-0-table.qza \
+  --i-phylogeny rooted-tree.qza \
+  --p-metric unweighted_unifrac \
+  --o-distance-matrix weighted_unifrac_distance_matrix.qza
+  
+#day 0 comparisons
+#weighted unifrac
+  qiime diversity beta-group-significance \
+  --i-distance-matrix day-0/weighted_unifrac_distance_matrix.qza \
+  --m-metadata-file novel-resource-metadata.txt \
+  --m-metadata-column Population \
+  --o-visualization day-0/weighted-population-significance.qzv \
+  --p-pairwise
+  
+  #unweighted unifrac
+    qiime diversity beta-group-significance \
+  --i-distance-matrix day-0/unweighted_unifrac_distance_matrix.qza \
+  --m-metadata-file novel-resource-metadata.txt \
+  --m-metadata-column Population \
+  --o-visualization day-0/unweighted-population-significance.qzv \
+  --p-pairwise
+
+#difference in the recipients pre-transplant
+qiime feature-table filter-samples \
+  --i-table final-table.qza \
+  --m-metadata-file novel-resource-metadata.txt \
+  --p-where "Population IN ('Whiterock')" \
+  --o-filtered-table recipients-pre-transplant-table.qza
+  
+   qiime diversity beta-phylogenetic \
+  --i-table recipients-pre-transplant-table.qza \
+  --i-phylogeny rooted-tree.qza \
+  --p-metric weighted_unifrac \
+  --o-distance-matrix weighted_unifrac_distance_matrix.qza 
+  
+    qiime diversity beta-phylogenetic \
+  --i-table drecipients-pre-transplant-table.qza \
+  --i-phylogeny rooted-tree.qza \
+  --p-metric unweighted_unifrac \
+  --o-distance-matrix weighted_unifrac_distance_matrix.qza
+
+ qiime diversity beta-group-significance \
+  --i-distance-matrix day-0/recipients-pre-transplant/weighted_unifrac_distance_matrix.qza \
+  --m-metadata-file novel-resource-metadata.txt \
+  --m-metadata-column Treatment \
+  --o-visualization day-0/recipients-pre-transplant/weighted-treatment-significance.qzv \
+  --p-pairwise
+  
+qiime diversity beta-group-significance \
+  --i-distance-matrix day-0/recipients-pre-transplant/unweighted_unifrac_distance_matrix.qza \
+  --m-metadata-file novel-resource-metadata.txt \
+  --m-metadata-column Treatment \
+  --o-visualization day-0/recipients-pre-transplant/unweighted-treatment-significance.qzv \
+  --p-pairwise
+  
+#day-5 post-transplant 
+
+mkdir day-5 
+
+qiime feature-table filter-samples \
+  --i-table final-table.qza \
+  --m-metadata-file novel-resource-metadata.txt \
+  --p-where "Sampletype IN ('day5')" \
+  --o-filtered-table day-5-table.qza 
+  
+  #generate alpha-diversity metrics  
+qiime diversity alpha \
+  --i-table day-5-table.qza \
+  --p-metric shannon \
+  --o-alpha-diversity shannon_vector.qza 
+  
+  qiime diversity alpha \
+  --i-table day-5-table.qza \
+  --p-metric  observed_otus \
+  --o-alpha-diversity observed_otus_vector.qza 
+  
+  qiime diversity alpha-phylogenetic \
+  --i-table day-5-table.qza \
+  --i-phylogeny rooted-tree.qza \
+  --p-metric faith_pd \
+  --o-alpha-diversity faith_pd_vector.qza
+  
+  #generate beta-diversity distance matrices
+  qiime diversity beta-phylogenetic \
+  --i-table day-5-table.qza \
+  --i-phylogeny rooted-tree.qza \
+  --p-metric weighted_unifrac \
+  --o-distance-matrix weighted_unifrac_distance_matrix.qza 
+  
+    qiime diversity beta-phylogenetic \
+  --i-table day-5-table.qza \
+  --i-phylogeny rooted-tree.qza \
+  --p-metric unweighted_unifrac \
+  --o-distance-matrix unweighted_unifrac_distance_matrix.qza
+
+#treatment comparisons
+qiime diversity beta-group-significance \
+  --i-distance-matrix day-5/weighted_unifrac_distance_matrix.qza \
+  --m-metadata-file novel-resource-metadata.txt \
+  --m-metadata-column Treatment \
+  --o-visualization day-5/weighted-treatment-significance.qzv \
+  --p-pairwise
+  
+qiime diversity beta-group-significance \
+  --i-distance-matrix day-5/unweighted_unifrac_distance_matrix.qza \
+  --m-metadata-file novel-resource-metadata.txt \
+  --m-metadata-column Treatment \
+  --o-visualization day-5/unweighted-treatment-significance.qzv \
+  --p-pairwise
+  
+ #comparison of treatment alpha-diversity over time
+ #subset for pre and post transplant 
+ #mkdir 0-vs-5
+ 
+ qiime feature-table filter-samples \
+  --i-table final-table.qza \
+  --m-metadata-file novel-resource-metadata.txt \
+  --p-where "Sampletype IN ('day0', 'day5')" \
+  --o-filtered-table 0-and-5-table.qza
+  
+  #make relative abundance for this analysis 
+  qiime feature-table relative-frequency \
+  --i-table  0-and-5-table.qza \
+  --o-relative-frequency-table 0-and-5-table-relative.qza
+  
+ qiime longitudinal pairwise-differences \
+  --i-table 0-vs-5/0-and-5-table-relative.qza \
+  --m-metadata-file novel-resource-metadata.txt \
+  --m-metadata-file 0-vs-5/observed_otus_vector.qza \
+  --p-metric Shannon \
+  --p-state-column Day \
+  --p-state-1 0 \
+  --p-state-2 5 \
+  --p-individual-id-column Subject \
+  --p-group-column Treatment \
+  --o-visualization 0-vs-5/shannon-pairwise.qzv 
+  
+   qiime longitudinal pairwise-differences \
+  --i-table 0-vs-5/0-and-5-table-relative.qza \
+  --m-metadata-file novel-resource-metadata.txt \
+  --m-metadata-file 0-vs-5/observed_otus_vector.qza \
+  --p-metric ObservedOtus \
+  --p-state-column Day \
+  --p-state-1 0 \
+  --p-state-2 5 \
+  --p-individual-id-column Subject \
+  --p-group-column Treatment \
+  --o-visualization 0-vs-5/observed-pairwise.qzv 
+  
+  qiime longitudinal pairwise-differences \
+  --i-table 0-vs-5/0-and-5-table-relative.qza \
+  --m-metadata-file novel-resource-metadata.txt \
+  --m-metadata-file 0-vs-5/faiths_pd_vector.qza \
+  --p-metric Faiths \
+  --p-state-column Day \
+  --p-state-1 0 \
+  --p-state-2 5 \
+  --p-individual-id-column Subject \
+  --p-group-column Treatment \
+  --o-visualization 0-vs-5/faiths-pairwise.qzv 
+  
+#-resin animals, comparison to themselves before/after transplant
+
+mkdir control-0-and-5 
+
+  #subset for control samples 0 and 5
+  
+    qiime feature-table filter-samples \
+  --i-table final-table.qza \
+  --m-metadata-file novel-resource-metadata.txt \
+  --p-where "Treatment IN ('control')" \
+  --o-filtered-table control-table.qza 
+  
+  qiime feature-table filter-samples \
+  --i-table control-table.qza \
+  --m-metadata-file novel-resource-metadata.txt \
+  --p-where "Sampletype IN ('day0', 'day5')" \
+  --o-filtered-table control-before-and-after-table.qza 
+  
+  #generate beta-diversity distance matrices
+  qiime diversity beta-phylogenetic \
+  --i-table control-before-and-after-table.qza \
+  --i-phylogeny rooted-tree.qza \
+  --p-metric weighted_unifrac \
+  --o-distance-matrix weighted_unifrac_distance_matrix.qza 
+  
+    qiime diversity beta-phylogenetic \
+  --i-table control-before-and-after-table.qza  \
+  --i-phylogeny rooted-tree.qza \
+  --p-metric unweighted_unifrac \
+  --o-distance-matrix unweighted_unifrac_distance_matrix.qza
+
+#treatment comparisons
+qiime diversity beta-group-significance \
+  --i-distance-matrix control-0-and-5/weighted_unifrac_distance_matrix.qza \
+  --m-metadata-file novel-resource-metadata.txt \
+  --m-metadata-column Treatment \
+  --o-visualization control-0-and-5/weighted-treatment-significance.qzv \
+  --p-pairwise
+  
+qiime diversity beta-group-significance \
+  --i-distance-matrix control-0-and-5/unweighted_unifrac_distance_matrix.qza \
+  --m-metadata-file novel-resource-metadata.txt \
+  --m-metadata-column Treatment \
+  --o-visualization control-0-and-5/unweighted-treatment-significance.qzv \
+  --p-pairwise
+  
+  
+  #30 days post transplants 
+  mkdir day-30
+  
+  qiime feature-table filter-samples \
+  --i-table final-table.qza \
+  --m-metadata-file novel-resource-metadata.txt \
+  --p-where "Sampletype IN ('day30')" \
+  --o-filtered-table day-30-table.qza 
+  
+  #generate alpha-diversity metrics  
+qiime diversity alpha \
+  --i-table day-30-table.qza \
+  --p-metric shannon \
+  --o-alpha-diversity shannon_vector.qza 
+  
+  qiime diversity alpha \
+  --i-table day-30-table.qza \
+  --p-metric  observed_otus \
+  --o-alpha-diversity observed_otus_vector.qza 
+  
+  qiime diversity alpha-phylogenetic \
+  --i-table day-30-table.qza \
+  --i-phylogeny rooted-tree.qza \
+  --p-metric faith_pd \
+  --o-alpha-diversity faith_pd_vector.qza
+  
+  #generate beta-diversity distance matrices
+  qiime diversity beta-phylogenetic \
+  --i-table day-30-table.qza \
+  --i-phylogeny rooted-tree.qza \
+  --p-metric weighted_unifrac \
+  --o-distance-matrix weighted_unifrac_distance_matrix.qza 
+  
+    qiime diversity beta-phylogenetic \
+  --i-table day-30-table.qza \
+  --i-phylogeny rooted-tree.qza \
+  --p-metric unweighted_unifrac \
+  --o-distance-matrix weighted_unifrac_distance_matrix.qza
+
+#treatment comparisons
+qiime diversity beta-group-significance \
+  --i-distance-matrix day-30/weighted_unifrac_distance_matrix.qza \
+  --m-metadata-file novel-resource-metadata.txt \
+  --m-metadata-column Treatment \
+  --o-visualization day-30/weighted-treatment-significance.qzv \
+  --p-pairwise
+  
+qiime diversity beta-group-significance \
+  --i-distance-matrix day-30/unweighted_unifrac_distance_matrix.qza \
+  --m-metadata-file novel-resource-metadata.txt \
+  --m-metadata-column Treatment \
+  --o-visualization day-30/unweighted-treatment-significance.qzv \
+  --p-pairwise
+  
+  #alpha-diversity treatment comparisons
+  qiime diversity alpha-group-significance \
+  --i-alpha-diversity day-30/shannon_vector.qza \
+  --m-metadata-file novel-resource-metadata.txt \
+  --o-visualization day-30/shannon-significance.qzv
+  
+qiime diversity alpha-group-significance \
+  --i-alpha-diversity day-30/observed_otus_vector.qza \
+  --m-metadata-file novel-resource-metadata.txt \
+  --o-visualization day-30/observed-otus-significance.qzv
+  
+qiime diversity alpha-group-significance \
+  --i-alpha-diversity day-30/faith_pd_vector.qza \
+  --m-metadata-file novel-resource-metadata.txt \
+  --o-visualization day-30/faith-significance.qzv
+
+#sourcetracker analysis
+sourcetracker2 gibbs -i final-table.biom -m novel-resource-metadata-sourcetracker.txt --sink_rarefaction_depth 30000 --source_rarefaction_depth 30000 -o results-rarefied-30000
+  
+#antibiotic experiment 
+qiime feature-table filter-samples \
+  --i-table single-final-table.qza \
+  --m-metadata-file antibiotic-metadata.tsv \
+  --p-where "Sampletype IN ('day0')" \
+  --o-filtered-table day-0-single-table.qza
+  
+mkdir day-0-single
+
+#generate alpha-diversity metrics  
+qiime diversity alpha \
+  --i-table day-0-single-table.qza \
+  --p-metric shannon \
+  --o-alpha-diversity shannon_vector.qza 
+  
+  qiime diversity alpha \
+  --i-table day-0-single-table.qza \
+  --p-metric  observed_otus \
+  --o-alpha-diversity observed_otus_vector.qza 
+  
+  qiime diversity alpha-phylogenetic \
+  --i-table day-0-single-table.qza \
+  --i-phylogeny rooted-tree.qza \
+  --p-metric faith_pd \
+  --o-alpha-diversity faith_pd_vector.qza
+  
+  #generate beta-diversity distance matrices
+  qiime diversity beta-phylogenetic \
+  --i-table day-0-single-table.qza \
+  --i-phylogeny rooted-tree.qza \
+  --p-metric weighted_unifrac \
+  --o-distance-matrix weighted_unifrac_distance_matrix.qza 
+  
+    qiime diversity beta-phylogenetic \
+  --i-table day-0-single-table.qza \
+  --i-phylogeny rooted-tree.qza \
+  --p-metric unweighted_unifrac \
+  --o-distance-matrix weighted_unifrac_distance_matrix.qza
+  
+#day 0 treatment comparisons
+#weighted unifrac
+  qiime diversity beta-group-significance \
+  --i-distance-matrix day-0-single/weighted_unifrac_distance_matrix.qza \
+  --m-metadata-file antibiotic-metadata.tsv \
+  --m-metadata-column Population \
+  --o-visualization day-0-single/weighted-population-significance.qzv \
+  --p-pairwise
+  
+  #unweighted unifrac
+    qiime diversity beta-group-significance \
+  --i-distance-matrix day-0-single/unweighted_unifrac_distance_matrix.qza \
+  --m-metadata-file antibiotic-metadata.tsv \
+  --m-metadata-column Population \
+  --o-visualization day-0-single/unweighted-population-significance.qzv \
+  --p-pairwise
+
+#effect of previous treatment?
+  qiime diversity adonis \
+  --i-distance-matrix day-0-single/unweighted_unifrac_distance_matrix.qza \
+  --m-metadata-file antibiotic-metadata.tsv \
+  --p-formula "Population*PreviousTreatment" \
+  --o-visualization day-0-single/unweighted-unifrac-adonis-accounting-for-previous.qzv 
+
+#difference in the recipients pre-transplant
+
+mkdir recipients-pre-transplant
+ 
+qiime feature-table filter-samples \
+  --i-table single-final-table.qza \
+  --m-metadata-file antibiotic-metadata.tsv \
+  --p-where "Population IN ('Whiterock')" \
+  --o-filtered-table recipients-pre-transplant-table.qza
+  
+   qiime diversity beta-phylogenetic \
+  --i-table recipients-pre-transplant-table.qza \
+  --i-phylogeny rooted-tree.qza \
+  --p-metric weighted_unifrac \
+  --o-distance-matrix weighted_unifrac_distance_matrix.qza 
+  
+    qiime diversity beta-phylogenetic \
+  --i-table recipients-pre-transplant-table.qza \
+  --i-phylogeny rooted-tree.qza \
+  --p-metric unweighted_unifrac \
+  --o-distance-matrix weighted_unifrac_distance_matrix.qza
+
+ qiime diversity beta-group-significance \
+  --i-distance-matrix recipients-pre-transplant/weighted_unifrac_distance_matrix.qza \
+  --m-metadata-file antibiotic-metadata.tsv \
+  --m-metadata-column Treatment \
+  --o-visualization recipients-pre-transplant/weighted-treatment-significance.qzv \
+  --p-pairwise
+  
+qiime diversity beta-group-significance \
+  --i-distance-matrix recipients-pre-transplant/unweighted_unifrac_distance_matrix.qza \
+  --m-metadata-file antibiotic-metadata.tsv \
+  --m-metadata-column Treatment \
+  --o-visualization recipients-pre-transplant/unweighted-treatment-significance.qzv \
+  --p-pairwise
+  
+  #+antibiotic treatment, changes in diversity post abx 
+  mkdir treatment-post-abx
+  
+ qiime feature-table filter-samples \
+  --i-table single-final-table.qza \
+  --m-metadata-file antibiotic-metadata.tsv \
+  --p-where "Sampletype IN ('Treatment')" \
+  --o-filtered-table treatment-single-table.qza 
+  
+   qiime feature-table filter-samples \
+  --i-table treatment-single-table.qza  \
+  --m-metadata-file antibiotic-metadata.tsv \
+  --p-where "Sampletype IN ('day-0', 'day-5')" \
+  --o-filtered-table treatment-post-abx-table.qza 
+  
+  qiime diversity beta-phylogenetic \
+  --i-table treatment-post-abx-table.qza  \
+  --i-phylogeny rooted-tree.qza \
+  --p-metric weighted_unifrac \
+  --o-distance-matrix weighted_unifrac_distance_matrix.qza 
+  
+    qiime diversity beta-phylogenetic \
+  --i-table treatment-post-abx-table.qza  \
+  --i-phylogeny rooted-tree.qza \
+  --p-metric unweighted_unifrac \
+  --o-distance-matrix weighted_unifrac_distance_matrix.qza
+
+ qiime diversity beta-group-significance \
+  --i-distance-matrix treatment-post-abx/weighted_unifrac_distance_matrix.qza \
+  --m-metadata-file antibiotic-metadata.tsv \
+  --m-metadata-column Day \
+  --o-visualization treatment-post-abx/weighted-unifrac-significance.qzv \
+  --p-pairwise
+  
+qiime diversity beta-group-significance \
+  --i-distance-matrix treatment-post-abx-table/unweighted_unifrac_distance_matrix.qza \
+  --m-metadata-file antibiotic-metadata.tsv \
+  --m-metadata-column Day \
+  --o-visualization treatment-post-abx-table/unweighted-permanova.qzv \
+  --p-pairwise
+  
+#effect of previous treatment?
+  qiime diversity adonis \
+  --i-distance-matrix treatment-post-abx/weighted_unifrac_distance_matrix.qza \
+  --m-metadata-file antibiotic-metadata.tsv \
+  --p-formula "Day*PreviousTreatment" \
+  --o-visualization treatment-post-abx/weighted-unifrac-previous-adonis.qzv
+  
+    qiime diversity adonis \
+  --i-distance-matrix treatment-post-abx/unweighted_unifrac_distance_matrix.qza \
+  --m-metadata-file antibiotic-metadata.tsv \
+  --p-formula "Day*PreviousTreatment" \
+  --o-visualization treatment-post-abx/unweighted-unifrac-previous-adonis.qzv
+  
+#changes in alpha-diversity
+#make relative abundance for this analysis 
+  qiime feature-table relative-frequency \
+  --i-table  post-abx-table.qza \
+  --o-relative-frequency-table relative-post-abx-table.qza
+  
+    qiime longitudinal pairwise-differences \
+  --i-table treatment-post-abx/relative-post-abx-table.qza \
+  --m-metadata-file antibiotic-metadata.tsv \
+  --p-metric Shannon \
+  --p-state-column Day \
+  --p-state-1 0 \
+  --p-state-2 3 \
+  --p-individual-id-column Subject \
+  --o-visualization treatment-post-abx/shannon-distances.qzv
+  
+  qiime longitudinal pairwise-differences \
+  --i-table treatment-post-abx/relative-post-abx-table.qza \
+  --m-metadata-file antibiotic-metadata.tsv \
+  --p-metric ObservedOtus \
+  --p-state-column Day \
+  --p-state-1 0 \
+  --p-state-2 3 \
+  --p-individual-id-column Subject \
+  --o-visualization treatment-post-abx/observed-distances.qzv
+  
+  qiime longitudinal pairwise-differences \
+  --i-table treatment-post-abx/relative-post-abx-table.qza \
+  --m-metadata-file antibiotic-metadata.tsv \
+  --p-metric Faiths \
+  --p-state-column Day \
+  --p-state-1 0 \
+  --p-state-2 3 \
+  --p-individual-id-column Subject \
+  --o-visualization treatment-post-abx/faith-distances.qzv
+  
+#day-5 post-transplant 
+
+mkdir day-5-single 
+
+qiime feature-table filter-samples \
+  --i-table single-final-table.qza \
+  --m-metadata-file antibiotic-metadata.tsv \
+  --p-where "Sampletype IN ('day5')" \
+  --o-filtered-table day-5-single-table.qza 
+  
+  #generate alpha-diversity metrics  
+qiime diversity alpha \
+  --i-table day-5-single-table.qza \
+  --p-metric shannon \
+  --o-alpha-diversity shannon_vector.qza 
+  
+  qiime diversity alpha \
+  --i-table day-5-single-table.qza \
+  --p-metric  observed_otus \
+  --o-alpha-diversity observed_otus_vector.qza 
+  
+  qiime diversity alpha-phylogenetic \
+  --i-table day-5-single-table.qza \
+  --i-phylogeny rooted-tree.qza \
+  --p-metric faith_pd \
+  --o-alpha-diversity faith_pd_vector.qza
+  
+  #generate beta-diversity distance matrices
+  qiime diversity beta-phylogenetic \
+  --i-table day-5-single-table.qza \
+  --i-phylogeny rooted-tree.qza \
+  --p-metric weighted_unifrac \
+  --o-distance-matrix weighted_unifrac_distance_matrix.qza 
+  
+    qiime diversity beta-phylogenetic \
+  --i-table day-5-single-table.qza \
+  --i-phylogeny rooted-tree.qza \
+  --p-metric unweighted_unifrac \
+  --o-distance-matrix weighted_unifrac_distance_matrix.qza
+
+#treatment comparisons
+qiime diversity beta-group-significance \
+  --i-distance-matrix day-5-single/weighted_unifrac_distance_matrix.qza \
+  --m-metadata-file antibiotic-metadata.tsv \
+  --m-metadata-column Treatment \
+  --o-visualization day-5-single/weighted-treatment-significance.qzv \
+  --p-pairwise
+  
+qiime diversity beta-group-significance \
+  --i-distance-matrix day-5-single/unweighted_unifrac_distance_matrix.qza \
+  --m-metadata-file antibiotic-metadata.tsv \
+  --m-metadata-column Treatment \
+  --o-visualization day-5-single/unweighted-treatment-significance.qzv \
+  --p-pairwise
+  
+  #effect of previous treatment?
+  qiime diversity adonis \
+  --i-distance-matrix day-5-single/weighted_unifrac_distance_matrix.qza \
+  --m-metadata-file antibiotic-metadata.tsv \
+  --p-formula "Treatment*PreviousTreatment" \
+  --o-visualization day-5-single/weighted-unifrac-previous-interaction-adonis.qzv
+  
+  qiime diversity adonis \
+  --i-distance-matrix day-5-single/unweighted_unifrac_distance_matrix.qza \
+  --m-metadata-file antibiotic-metadata.tsv \
+  --p-formula "Treatment*PreviousTreatment" \
+  --o-visualization day-5-single/unweighted-unifrac-previous-interaction-adonis.qzv
+  
+ #comparison of treatment alpha-diversity over time
+ #subset for pre and post transplant 
+ #mkdir 0-and-5
+ qiime feature-table filter-samples \
+  --i-table single-final-table.qza \
+  --m-metadata-file antibiotic-metadata.tsv \
+  --p-where "Sampletype IN ('day0', 'day5')" \
+  --o-filtered-table 0-and-5-table.qza
+  
+  #make relative abundance for this analysis 
+  qiime feature-table relative-frequency \
+  --i-table  0-and-5-table.qza \
+  --o-relative-frequency-table 0-and-5-table-relative.qza
+  
+ qiime longitudinal pairwise-differences \
+  --i-table 0-and-5/0-and-5-table-relative.qza \
+  --m-metadata-file antibiotic-metadata.tsv \
+  --m-metadata-file 0-and-5/observed_otus_vector.qza \
+  --p-metric Shannon \
+  --p-state-column Day \
+  --p-state-1 0 \
+  --p-state-2 5 \
+  --p-individual-id-column Subject \
+  --p-group-column Treatment \
+  --o-visualization 0-and-5/shannon-pairwise.qzv 
+  
+   qiime longitudinal pairwise-differences \
+  --i-table 0-and-5/0-and-5-table-relative.qza \
+  --m-metadata-file antibiotic-metadata.tsv \
+  --m-metadata-file 0-and-5/observed_otus_vector.qza \
+  --p-metric ObservedOtus \
+  --p-state-column Day \
+  --p-state-1 0 \
+  --p-state-2 5 \
+  --p-individual-id-column Subject \
+  --p-group-column Treatment \
+  --o-visualization 0-and-5/observed-pairwise.qzv 
+  
+  qiime longitudinal pairwise-differences \
+  --i-table 0-and-5/0-and-5-table-relative.qza \
+  --m-metadata-file antibiotic-metadata.tsv \
+  --m-metadata-file 0-and-5/faiths_pd_vector.qza \
+  --p-metric Faiths \
+  --p-state-column Day \
+  --p-state-1 0 \
+  --p-state-2 5 \
+  --p-individual-id-column Subject \
+  --p-group-column Treatment \
+  --o-visualization 0-and-5/faiths-pairwise.qzv 
+  
+#-antibiotic animals, comparison to themselves before/after transplant
+mkdir control-0-and-5 
+  #subset for control samples 0 and 5
+  
+    qiime feature-table filter-samples \
+  --i-table single-final-table.qza \
+  --m-metadata-file antibiotic-metadata.tsv \
+  --p-where "Treatment IN ('control')" \
+  --o-filtered-table control-table.qza 
+  
+  qiime feature-table filter-samples \
+  --i-table control-table.qza \
+  --m-metadata-file antibiotic-metadata.tsv \
+  --p-where "Sampletype IN ('day0', 'day5')" \
+  --o-filtered-table control-before-and-after-table.qza 
+  
+  #generate beta-diversity distance matrices
+  qiime diversity beta-phylogenetic \
+  --i-table control-before-and-after-table.qza \
+  --i-phylogeny rooted-tree.qza \
+  --p-metric weighted_unifrac \
+  --o-distance-matrix weighted_unifrac_distance_matrix.qza 
+  
+    qiime diversity beta-phylogenetic \
+  --i-table control-before-and-after-table.qza  \
+  --i-phylogeny rooted-tree.qza \
+  --p-metric unweighted_unifrac \
+  --o-distance-matrix unweighted_unifrac_distance_matrix.qza
+
+#treatment comparisons
+qiime diversity beta-group-significance \
+  --i-distance-matrix control-0-and-5/weighted_unifrac_distance_matrix.qza \
+  --m-metadata-file antibiotic-metadata.tsv \
+  --m-metadata-column Treatment \
+  --o-visualization control-0-and-5/weighted-treatment-significance.qzv \
+  --p-pairwise
+  
+qiime diversity beta-group-significance \
+  --i-distance-matrix control-0-and-5/unweighted_unifrac_distance_matrix.qza \
+  --m-metadata-file antibiotic-metadata.tsv \
+  --m-metadata-column Treatment \
+  --o-visualization control-0-and-5/unweighted-treatment-significance.qzv \
+  --p-pairwise
+  
+  
+#effect of previous treatment?
+    qiime diversity adonis \
+  --i-distance-matrix control-0-and-5/weighted_unifrac_distance_matrix.qza \
+  --m-metadata-file antibiotic-metadata.tsv \
+  --p-formula "Day*PreviousTreatment" \
+  --o-visualization control-0-and-5/weighted-unifrac-previous-adonis.qzv
+  
+    qiime diversity adonis \
+  --i-distance-matrix control-0-and-5/unweighted_unifrac_distance_matrix.qza \
+  --m-metadata-file antibiotic-metadata.tsv \
+  --p-formula "Day*PreviousTreatment" \
+  --o-visualization control-0-and-5/unweighted-unifrac-previous-adonis.qzv
+
+  
+  #30 days post transplants 
+  mkdir day-30-single
+  
+  qiime feature-table filter-samples \
+  --i-table single-final-table.qza \
+  --m-metadata-file antibiotic-metadata.tsv \
+  --p-where "Sampletype IN ('day30')" \
+  --o-filtered-table day-30-single-table.qza 
+  
+  #generate alpha-diversity metrics  
+qiime diversity alpha \
+  --i-table day-30-single-table.qza \
+  --p-metric shannon \
+  --o-alpha-diversity shannon_vector.qza 
+  
+  qiime diversity alpha \
+  --i-table day-30-single-table.qza \
+  --p-metric  observed_otus \
+  --o-alpha-diversity observed_otus_vector.qza 
+  
+  qiime diversity alpha-phylogenetic \
+  --i-table day-30-single-table.qza \
+  --i-phylogeny rooted-tree.qza \
+  --p-metric faith_pd \
+  --o-alpha-diversity faith_pd_vector.qza
+  
+  #generate beta-diversity distance matrices
+  qiime diversity beta-phylogenetic \
+  --i-table day-30-single-table.qza \
+  --i-phylogeny rooted-tree.qza \
+  --p-metric weighted_unifrac \
+  --o-distance-matrix weighted_unifrac_distance_matrix.qza 
+  
+    qiime diversity beta-phylogenetic \
+  --i-table day-30-single-table.qza \
+  --i-phylogeny rooted-tree.qza \
+  --p-metric unweighted_unifrac \
+  --o-distance-matrix unweighted_unifrac_distance_matrix.qza
+
+#treatment comparisons
+qiime diversity beta-group-significance \
+  --i-distance-matrix day-30-single/weighted_unifrac_distance_matrix.qza \
+  --m-metadata-file antibiotic-metadata.tsv \
+  --m-metadata-column Treatment \
+  --o-visualization day-30-single/weighted-treatment-significance.qzv \
+  --p-pairwise
+  
+qiime diversity beta-group-significance \
+  --i-distance-matrix day-30-single/unweighted_unifrac_distance_matrix.qza \
+  --m-metadata-file antibiotic-metadata.tsv \
+  --m-metadata-column Treatment \
+  --o-visualization day-30-single/unweighted-treatment-significance.qzv \
+  --p-pairwise
+  
+  #alpha-diversity treatment comparisons
+  qiime diversity alpha-group-significance \
+  --i-alpha-diversity day-30-single/shannon_vector.qza \
+  --m-metadata-file antibiotic-metadata.tsv \
+  --o-visualization day-30-single/shannon-significance.qzv
+  
+qiime diversity alpha-group-significance \
+  --i-alpha-diversity day-30-single/observed_otus_vector.qza \
+  --m-metadata-file antibiotic-metadata.tsv \
+  --o-visualization day-30-single/observed-otus-significance.qzv
+  
+qiime diversity alpha-group-significance \
+  --i-alpha-diversity day-30-single/faith_pd_vector.qza \
+  --m-metadata-file antibiotic-metadata.tsv \
+  --o-visualization day-30-single/faith-significance.qzv
+  
+  #effect of previous treatment?
+  qiime diversity adonis \
+  --i-distance-matrix day-30-single/weighted_unifrac_distance_matrix.qza \
+  --m-metadata-file antibiotic-metadata.tsv \
+  --p-formula "Treatment*PreviousTreatment" \
+  --o-visualization day-30-single/weighted-unifrac-previous-adonis.qzv
+  
+  qiime diversity adonis \
+  --i-distance-matrix day-30-single/unweighted_unifrac_distance_matrix.qza \
+  --m-metadata-file antibiotic-metadata.tsv \
+  --p-formula "Treatment*PreviousTreatment" \
+  --o-visualization day-30-single/unweighted-unifrac-previous-adonis.qzv
+  
+#testing for effect of water intake on beta-diversity in +antibiotic animals over time
+#filter for +antibiotic animals before and after transplant 
+ qiime feature-table filter-samples \
+  --i-table single-final-table.qza \
+  --m-metadata-file antibiotic-metadata.tsv \
+  --p-where "Treatment IN ('treatment')" \
+  --o-filtered-table treatment-only-table.qza
+  
+ qiime feature-table filter-samples \
+  --i-table treatment-only-table.qza \
+  --m-metadata-file antibiotic-metadata.tsv \
+  --p-where "Sampletype IN ('day0', 'day5')" \
+  --o-filtered-table treatment-0-5.qza
+  
+qiime diversity beta-phylogenetic \
+  --i-table treatment-0-5.qza \
+  --i-phylogeny rooted-tree.qza \
+  --p-metric weighted_unifrac \
+  --o-distance-matrix weighted_unifrac_distance_matrix.qza 
+  
+qiime diversity beta-phylogenetic \
+  --i-table treatment-0-5.qza \
+  --i-phylogeny rooted-tree.qza \
+  --p-metric unweighted_unifrac \
+  --o-distance-matrix unweighted_unifrac_distance_matrix.qza
+  
+    qiime diversity adonis \
+  --i-distance-matrix treatment-0-5/weighted_unifrac_distance_matrix.qza \
+  --m-metadata-file antibiotic-metadata.tsv \
+  --p-formula "Day*water_intake" \
+  --o-visualization treatment-0-5/weighted-unifrac-neomycin-adonis.qzv
+  
+  qiime diversity adonis \
+  --i-distance-matrix treatment-0-5/unweighted_unifrac_distance_matrix.qza \
+  --m-metadata-file antibiotic-metadata.tsv \
+  --p-formula "Day*water_intake" \
+  --o-visualization treatment-0-5/unweighted-unifrac-neomycin-adonis.qzv
+  
+  #or directly after administration of abx 
+  qiime diversity adonis \
+  --i-distance-matrix treatment-post-abx/weighted_unifrac_distance_matrix.qza \
+  --m-metadata-file antibiotic-metadata.tsv \
+  --p-formula "Day*water_intake" \
+  --o-visualization treatment-post-abx/weighted-unifrac-neomycin-adonis.qzv
+  
+    qiime diversity adonis \
+  --i-distance-matrix treatment-post-abx/unweighted_unifrac_distance_matrix.qza \
+  --m-metadata-file antibiotic-metadata.tsv \
+  --p-formula "Day*water_intake" \
+  --o-visualization treatment-post-abx/unweighted-unifrac-neomycin-adonis.qzv
+  
+#did previous treatment effect our groups without donors in the analysis? 
+  qiime diversity adonis \
+  --i-distance-matrix control-0-and-5/weighted_unifrac_distance_matrix.qza \
+  --m-metadata-file antibiotic-metadata.tsv \
+  --p-formula "Day*PreviousTreatment" \
+  --o-visualization control-0-and-5/weighted-unifrac-previous-adonis.qzv
+  #not significant 
+  
+    qiime diversity adonis \
+  --i-distance-matrix recipients-pre-transplant/weighted_unifrac_distance_matrix.qza \
+  --m-metadata-file antibiotic-metadata.tsv \
+  --p-formula "Treatment*PreviousTreatment" \
+  --o-visualization recipients-pre-transplant/weighted-unifrac-previous-adonis.qzv
+  #not significant 
+  
+    qiime diversity adonis \
+  --i-distance-matrix recipients-pre-transplant/unweighted_unifrac_distance_matrix.qza \
+  --m-metadata-file antibiotic-metadata.tsv \
+  --p-formula "Treatment*PreviousTreatment" \
+  --o-visualization recipients-pre-transplant/unweighted-unifrac-previous-adonis.qzv
+  #not significant 
+  
+  qiime feature-table filter-samples \
+  --i-table single-final-table.qza \
+  --m-metadata-file antibiotic-metadata.tsv \
+  --p-where "Population='whiterock'" \
+  --o-filtered-table recipients-only-table.qza
+  
+qiime feature-table filter-samples \
+  --i-table final-table-single.qza \
+  --m-metadata-file antibiotic-metadata.tsv \
+  --p-where "Day='5'" \
+  --o-filtered-table recipients-only-post-transplant-table.qza
+  
+  qiime diversity beta-phylogenetic \
+  --i-table recipients-only-post-transplant-table.qza \
+  --i-phylogeny rooted-tree.qza \
+  --p-metric weighted_unifrac \
+  --o-distance-matrix weighted_unifrac_distance_matrix.qza 
+  
+qiime diversity beta-phylogenetic \
+  --i-table recipients-only-post-transplant-table.qza \
+  --i-phylogeny rooted-tree.qza \
+  --p-metric unweighted_unifrac \
+  --o-distance-matrix unweighted_unifrac_distance_matrix.qza
+  
+     qiime diversity adonis \
+  --i-distance-matrix recipients-post-transplant/weighted_unifrac_distance_matrix.qza \
+  --m-metadata-file antibiotic-metadata.tsv \
+  --p-formula "Treatment*PreviousTreatment" \
+  --o-visualization recipients-post-transplant/weighted-unifrac-previous-adonis.qzv
+  #not significant 
+  
+    qiime diversity adonis \
+  --i-distance-matrix recipients-post-transplant/unweighted_unifrac_distance_matrix.qza \
+  --m-metadata-file antibiotic-metadata.tsv \
+  --p-formula "Treatment*PreviousTreatment" \
+  --o-visualization recipients-post-transplant/unweighted-unifrac-previous-adonis.qzv
+  
+#does treatment and donor differ when using adonis
+   qiime feature-table filter-samples \
+  --i-table final-table-single.qza \
+  --m-metadata-file antibiotic-metadata.tsv \
+  --p-where "Treatment IN ('donor', 'treatment')" \
+  --o-filtered-table treatment-donor-table.qza
+  
+     qiime feature-table filter-samples \
+  --i-table treatment-donor-table.qza \
+  --m-metadata-file antibiotic-metadata.tsv \
+  --p-where "Sampletype IN ('day5')" \
+  --o-filtered-table treatment-donor-table-5.qza
+  
+qiime diversity beta-phylogenetic \
+  --i-table treatment-donor-table-5.qza \
+  --i-phylogeny rooted-tree.qza \
+  --p-metric weighted_unifrac \
+  --o-distance-matrix weighted_unifrac_distance_matrix.qza 
+  
+qiime diversity beta-phylogenetic \
+  --i-table treatment-donor-table-5.qza \
+  --i-phylogeny rooted-tree.qza \
+  --p-metric unweighted_unifrac \
+  --o-distance-matrix unweighted_unifrac_distance_matrix.qza
+  
+    qiime diversity adonis \
+  --i-distance-matrix treatment-donor-5/weighted_unifrac_distance_matrix.qza \
+  --m-metadata-file antibiotic-metadata.tsv \
+  --p-formula "Treatment*PreviousTreatment" \
+  --o-visualization treatment-donor-5/weighted-unifrac-previous-adonis.qzv
+  
+  qiime diversity adonis \
+  --i-distance-matrix treatment-donor-5/unweighted_unifrac_distance_matrix.qza \
+  --m-metadata-file antibiotic-metadata.tsv \
+  --p-formula "Treatment*PreviousTreatment" \
+  --o-visualization treatment-donor-5/unweighted-unifrac-previous-adonis.qzv
+  
+  
+  ######does control differ when we use adonis 
+  qiime feature-table filter-samples \
+  --i-table final-table-single.qza \
+  --m-metadata-file antibiotic-metadata.tsv \
+  --p-where "Treatment IN ('donor', 'control')" \
+  --o-filtered-table control-donor-table.qza
+  
+     qiime feature-table filter-samples \
+  --i-table control-donor-table.qza \
+  --m-metadata-file antibiotic-metadata.tsv \
+  --p-where "Sampletype IN ('day5')" \
+  --o-filtered-table control-donor-table-5.qza
+  
+
+qiime diversity beta-phylogenetic \
+  --i-table control-donor-table-5.qza \
+  --i-phylogeny rooted-tree.qza \
+  --p-metric weighted_unifrac \
+  --o-distance-matrix weighted_unifrac_distance_matrix.qza 
+  
+qiime diversity beta-phylogenetic \
+  --i-table control-donor-table-5.qza \
+  --i-phylogeny rooted-tree.qza \
+  --p-metric unweighted_unifrac \
+  --o-distance-matrix unweighted_unifrac_distance_matrix.qza
+  
+    qiime diversity adonis \
+  --i-distance-matrix control-donor-5/weighted_unifrac_distance_matrix.qza \
+  --m-metadata-file antibiotic-metadata.tsv \
+  --p-formula "Treatment*PreviousTreatment" \
+  --o-visualization control-donor-5/weighted-unifrac-previous-adonis.qzv
+  
+  qiime diversity adonis \
+  --i-distance-matrix control-donor-5/unweighted_unifrac_distance_matrix.qza \
+  --m-metadata-file antibiotic-metadata.tsv \
+  --p-formula "Treatment*PreviousTreatment" \
+  --o-visualization control-donor-5/unweighted-unifrac-previous-adonis.qzv
+
+
+#sourcetracker analysis
+sourcetracker2 gibbs -i single-final-table.biom -m antibiotic-metadata-sourcetracker.txt --sink_rarefaction_depth 30000 --source_rarefaction_depth 30000 -o results-rarefied-30000
+
+  

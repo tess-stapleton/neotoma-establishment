@@ -1,0 +1,286 @@
+#Sequence Processing Establishment Experiment
+#run on QIIME2 version 2019.4
+
+#creosote experiment
+#manifest manual importation of sequences 
+#adapters have already been removed
+#manifest file made
+
+qiime tools import \
+  --type 'SampleData[PairedEndSequencesWithQuality]' \
+  --input-path manifest.tsv \
+  --output-path paired-end-demux.qza \
+  --input-format PairedEndFastqManifestPhred33V2
+  
+#view quality
+  qiime demux summarize \
+  --i-data paired-end-demux.qza \
+  --o-visualization paired-end-demux.qzv
+
+#remove primers
+
+qiime cutadapt trim-paired \
+  --i-demultiplexed-sequences paired-end-demux.qza \
+  --p-anywhere-f GTGCCAGCMGCCGCGGTAA \
+--p-anywhere-r GGACTACHVGGGTWTCTAAT \
+  --p-error-rate 0 \
+  --o-trimmed-sequences trimmed-seqs.qza \
+  --verbose
+
+#view
+qiime demux summarize \
+  --i-data trimmed-seqs.qza \
+  --o-visualization trimmed-demux.qzv
+  
+#DADA2 denoising/ASV clustering
+#seqs too short to trim, adapters/primers already removed
+
+qiime dada2 denoise-paired \
+  --i-demultiplexed-seqs trimmed-seqs.qza \
+  --p-trim-left-f 0 \
+  --p-trim-left-r 0 \
+  --p-trunc-len-f 0 \
+  --p-trunc-len-r 0 \
+  --o-table table.qza \
+  --o-representative-sequences rep-seqs.qza \
+  --o-denoising-stats denoising-stats.qza \
+ --p-n-threads 0 \
+--p-min-fold-parent-over-abundance 2 \
+  --verbose
+  
+#check that all sequences merged and too many chimeras weren’t filtered out
+qiime metadata tabulate \
+  --m-input-file denoising-stats.qza \
+  --o-visualization stats-dada.qzv
+  
+#generate phylogenetic tree, mafft
+qiime phylogeny align-to-tree-mafft-fasttree \
+  --i-sequences rep-seqs.qza \
+  --o-alignment aligned-rep-seqs.qza \
+  --o-masked-alignment masked-aligned-rep-seqs.qza \
+  --o-tree unrooted-tree.qza \
+  --o-rooted-tree rooted-tree.qza \
+--verbose
+
+#alpha rarefaction plotting
+#check to see where diversity is captured
+#max depth = median sequence count per sample
+qiime diversity alpha-rarefaction \
+  --i-table table.qza \
+  --i-phylogeny rooted-tree.qza \
+  --p-max-depth 30000 \
+  --m-metadata-file novel-resource-metadata.txt \
+  --o-visualization alpha-rarefaction.qzv
+
+#classify reads
+#used classifier trained on my data
+qiime feature-classifier classify-sklearn \
+  --i-classifier classifier.qza \
+  --i-reads rep-seqs.qza \
+  --o-classification taxonomy.qza \
+--verbose
+
+#filtering 
+#filter out features only seen in 2 samples or fewer
+qiime feature-table filter-features \
+  --i-table table.qza \
+  --p-min-samples 2 \
+  --o-filtered-table doubleton-filtered-table.qza
+
+#filter out mitochondria and chloroplast 
+qiime taxa filter-table \
+  --i-table doubleton-filtered-table.qza \
+  --i-taxonomy taxonomy.qza \
+  --p-exclude mitochondria,chloroplast \
+  --o-filtered-table no-mito-no-chloroplast-table.qza
+  
+#filter out ASVs that appear less than 10 times
+qiime feature-table filter-features \
+  --i-table no-mito-no-chloroplast-table.qza \
+  --p-min-frequency 10 \
+  --o-filtered-table no-low-frequency-table.qza
+
+#filter out samples with low biodiversity aka no reads
+qiime feature-table filter-samples \
+  --i-table no-low-frequency-table.qza \
+  --p-min-frequency 4000 \
+  --o-filtered-table final-table.qza
+#only blanks filtered out
+
+#rarefy final table 
+qiime feature-table rarefy \
+  --i-table final-table.qza \
+  --p-sampling-depth 30000 \
+  --p-no-with-replacement \    
+  --o-rarefied-table final-table.qza
+  
+#antibiotic experiment
+#manifest manual importation of sequences 
+#adapters have already been removed
+#manifest file made
+
+qiime tools import \
+  --type 'SampleData[PairedEndSequencesWithQuality]' \
+  --input-path  manifest.tsv \
+  --output-path paired-end-demux.qza \
+  --input-format PairedEndFastqManifestPhred33V2
+  
+#remove primers
+  qiime cutadapt trim-paired \
+  --i-demultiplexed-sequences paired-end-demux.qza \
+  --p-front-f GTGCCAGCMGCCGCGGTAA \
+  --p-front-r GGACTACHVGGGTWTCTAAT \
+  --p-error-rate 0.2 \
+  --o-trimmed-sequences trimmed-seqs2.qza \
+  --verbose
+  
+  #view
+  qiime demux summarize \
+  --i-data trimmed-seqs2.qza \
+  --o-visualization demux2.qzv
+
+
+#using forward reads only due to insufficient read overlap
+qiime dada2 denoise-single \
+  --i-demultiplexed-seqs trimmed-seqs2.qza \
+  --p-trim-left 0 \
+  --p-trunc-len 0 \
+  --o-representative-sequences rep-seqs-dada2-single.qza \
+  --o-table table-dada2-single.qza \
+  --o-denoising-stats stats-dada2-single.qza
+  
+  #view
+  qiime metadata tabulate \
+  --m-input-file rep-seqs-dada2-single.qza \
+  --o-visualization rep-seqs-dada2-single.qzv
+
+#make phylogenetic tree using mafft
+qiime phylogeny align-to-tree-mafft-fasttree \
+  --i-sequences rep-seqs-dada2-single.qza \
+  --o-alignment aligned-rep-seqs-single.qza \
+  --o-masked-alignment masked-aligned-rep-seqs-single.qza \
+  --o-tree unrooted-tree-single.qza \
+  --o-rooted-tree rooted-tree-single.qza \
+--verbose
+
+#qiime diversity alpha-rarefaction \
+  --i-table trimming-steps/table-dada2-single.qza \
+  --i-phylogeny trimming-steps/rooted-tree-single.qza \
+  --p-max-depth 30000 \
+  --m-metadata-file antibiotic-metadata.tsv \
+  --o-visualization trimming-steps/alpha-rarefaction-single.qzv
+
+#classify reads
+qiime feature-classifier classify-sklearn \
+  --i-classifier classifier.qza \
+  --i-reads rep-seqs-dada2.qza \
+  --o-classification taxonomy.qza
+
+#filtering
+qiime feature-table filter-features \
+  --i-table table-dada2-single.qza \
+  --p-min-samples 2 \
+  --o-filtered-table single-no-singletons-table.qza
+
+#Filter out chloroplast, mitochondria 
+qiime taxa filter-table \
+  --i-table single-no-singletons-table.qza \
+  --i-taxonomy taxonomy-single.qza \
+  --p-exclude mitochondria,chloroplast \
+  --o-filtered-table single-table-no-mitochondria-no-chloroplast.qza
+
+#Filter out reads that appear less than 10 times 
+qiime feature-table filter-features \
+  --i-table single-table-no-mitochondria-no-chloroplast.qza \
+  --p-min-frequency 10 \
+  --o-filtered-table single-final-table.qza
+
+#rarefy
+qiime feature-table rarefy \
+  --i-table single-final-table.qza \
+  --p-sampling-depth 30000 \
+  --p-no-with-replacement \    
+  --o-rarefied-table single-final-table.qza
+  
+#both experiments at once for comparison 
+qiime tools import \
+  --type 'SampleData[PairedEndSequencesWithQuality]' \
+  --input-path combined-manifest.txt \
+  --output-path paired-end-demux.qza \
+  --input-format PairedEndFastqManifestPhred33V2
+  
+  qiime cutadapt trim-paired \
+  --i-demultiplexed-sequences paired-end-demux.qza \
+  --p-front-f GTGCCAGCMGCCGCGGTAA \
+  --p-front-r GGACTACHVGGGTWTCTAAT \
+  --p-error-rate 0.2 \
+  --o-trimmed-sequences trimmed-seqs.qza \
+  --verbose
+
+qiime dada2 denoise-single \
+  --i-demultiplexed-seqs trimmed-seqs.qza \
+  --p-trim-left 0 \
+  --p-trunc-len 0 \
+  --o-table table-singles.qza \
+  --o-representative-sequences rep-seqs-singles.qza \
+  --o-denoising-stats denoising-stats-singles.qza \
+ --p-n-threads 0 \
+--p-min-fold-parent-over-abundance 2 \
+  --verbose
+  
+  qiime metadata tabulate \
+  --m-input-file denoising-stats-singles.qza \
+  --o-visualization stats-dada-singles.qzv
+  
+  qiime phylogeny align-to-tree-mafft-fasttree \
+  --i-sequences rep-seqs-singles.qza \
+  --o-alignment aligned-rep-seqs.qza \
+  --o-masked-alignment masked-aligned-rep-seqs.qza \
+  --o-tree unrooted-tree.qza \
+  --o-rooted-tree rooted-tree.qza \
+--verbose
+
+qiime diversity alpha-rarefaction \
+  --i-table table-singles.qza \
+  --i-phylogeny rooted-tree.qza \
+  --p-max-depth 30000 \
+  --m-metadata-file combined-metadata.txt \
+  --o-visualization alpha-rarefaction.qzv
+  
+  
+  qiime feature-classifier classify-sklearn \
+  --i-classifier classifier.qza \
+  --i-reads rep-seqs-singles.qza \
+  --o-classification taxonomy.qza \
+--verbose
+
+
+#filtering
+qiime feature-table filter-features \
+  --i-table table-singles.qza \
+  --p-min-samples 4 \
+  --o-filtered-table doubleton-filtered-table-single.qza
+
+#filter out mitochondria and chloroplast 
+qiime taxa filter-table \
+  --i-table doubleton-filtered-table-single.qza \
+  --i-taxonomy taxonomy.qza \
+  --p-exclude mitochondria,chloroplast \
+  --o-filtered-table no-mito-no-chloroplast-table-single.qza
+
+#filter out ASVs that appear less than 10 times
+
+qiime feature-table filter-features \
+  --i-table no-mito-no-chloroplast-table-single.qza \
+  --p-min-frequency 10 \
+  --o-filtered-table no-low-frequency-table.qza
+
+#filter out samples with low biodiversity aka no reads
+qiime feature-table filter-samples \
+  --i-table  no-low-frequency-table.qza \
+  --p-min-frequency 4000 \
+  --o-filtered-table final-table.qza
+  
+qiime metadata tabulate \
+  --m-input-file final-table.qza \
+  --o-visualization final-table.qzv
