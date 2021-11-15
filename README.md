@@ -1,1 +1,1 @@
-# neotoma-establishment
+Code for all sequence processing and data analysis associated with the manuscript: "Plant Secondary Compound- and Antibiotic-Induced Community Disturbances Improve the Establishment of Foreign Gut Microbiota"
